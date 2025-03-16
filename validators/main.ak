@@ -27,8 +27,9 @@ validator main(
         // Since the structure of the staking script's redeemer is of no
         // importance, we can use the generic variant of the Merkelized
         // validator to "unsafely" extract the first value of its redeemer.
-        // We know this value is supposed to be equal to this script'hash, which
-        // enables the staking script to have access to this policy ID.
+        // We know this value is supposed to be a policy ID, and that it must be
+        // equal to this script's hash, which gives the staking script access to
+        // the policy ID (i.e. scrip hash) of this validator.
         merkelized_validator.generic_delegated_validation(
           staking_validator: mint_logic_script_hash,
           withdraw_redeemer_validator: fn(withdraw_redeemer: Data) -> Bool {
@@ -39,7 +40,7 @@ validator main(
           redeemers: tx.redeemers,
         )
       Burn ->
-        // This is identical to the minting endpoint. Only the target script
+        // This is identical to the minting endpoint, only the target script
         // hash is different.
         merkelized_validator.generic_delegated_validation(
           staking_validator: burn_logic_script_hash,
