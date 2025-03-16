@@ -2,13 +2,12 @@ use aiken/builtin
 use aiken/cbor
 use aiken/collection/dict
 use aiken/collection/list
-use aiken/collection/pairs
 use aiken/crypto.{VerificationKeyHash, blake2b_256}
 use cardano/address.{Address, Credential, Script}
 use cardano/assets.{PolicyId}
 use cardano/certificate.{Certificate, RegisterCredential, UnregisterCredential}
 use cardano/transaction.{
-  InlineDatum, Input, Output, OutputReference, Transaction,
+  InlineDatum, Input, Output, Transaction,
 }
 
 pub type MintRedeemer {
@@ -69,7 +68,7 @@ validator mint_logic {
     expect 1 = mint |> assets.quantity_of(target_policy_id, asset_name)
 
     // Find the `owner` attached to the output UTxO.
-    let owner: PolicyId = builtin.un_b_data(output_datum_data)
+    let owner: VerificationKeyHash = builtin.un_b_data(output_datum_data)
 
     // This specified `owner` must have signed this minting transaction.
     extra_signatories |> list.any(fn(vkey) -> Bool { owner == vkey })
