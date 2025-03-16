@@ -1,0 +1,23 @@
+name = "keyan-m/aiken-delegation-sample"
+version = "0.0.0"
+compiler = "v1.1.9"
+plutus = "v3"
+license = "Apache-2.0"
+description = "Aiken contracts for project 'keyan-m/aiken-delegation-sample'"
+
+[repository]
+user = "keyan-m"
+project = "aiken-delegation-sample"
+platform = "github"
+
+[[dependencies]]
+name = "aiken-lang/stdlib"
+version = "v2.2.0"
+source = "github"
+
+[[dependencies]]
+name = "anastasia-labs/aiken-design-patterns"
+version = "v1.2.0"
+source = "github"
+
+[config]
