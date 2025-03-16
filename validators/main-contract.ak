@@ -3,9 +3,9 @@ use aiken/crypto.{ScriptHash, VerificationKeyHash}
 use aiken_design_patterns/merkelized_validator
 use cardano/assets.{PolicyId}
 use cardano/transaction.{OutputReference, Redeemer, Transaction}
-use utils/main.{Burn, Mint, MintRedeemer}
+use utils/main_contract.{Burn, Mint, MintRedeemer}
 
-validator main_contract(
+validator main(
   mint_logic_script_hash: ScriptHash,
   burn_logic_script_hash: ScriptHash,
   spend_logic_script_hash: ScriptHash,

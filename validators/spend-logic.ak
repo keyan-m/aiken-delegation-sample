@@ -3,12 +3,13 @@ use aiken/collection/list
 use aiken_design_patterns/tx_level_minter
 use cardano/address.{Address, Credential, Script}
 use cardano/assets.{AssetName}
-use cardano/certificate.{Certificate, RegisterCredential, UnregisterCredential}
+use cardano/certificate.{Certificate}
 use cardano/transaction.{Input, Output, Transaction}
-use utils/main
+use utils/common
+use utils/main_contract
 use utils/spend_logic.{SpendRedeemer}
 
-validator mint_logic {
+validator main {
   withdraw(redeemer: SpendRedeemer, _account: Credential, tx: Transaction) {
     let SpendRedeemer { target_out_ref, input_index } = redeemer
 
@@ -33,8 +34,8 @@ validator mint_logic {
     tx_level_minter.spend(
       mint_script_hash: spending_script_hash,
       mint_redeemer_validator: fn(r: Data) -> Bool {
-        expect coerced: main.MintRedeemer = r
-        coerced == main.Burn
+        expect coerced: main_contract.MintRedeemer = r
+        coerced == main_contract.Burn
       },
       mint_tokens_validator: fn(name_quantity_pairs: Dict<AssetName, Int>) -> Bool {
         name_quantity_pairs
@@ -56,10 +57,7 @@ validator mint_logic {
   //
   // With observer scripts (CIP-112) we won't need this.
   publish(_redeemer: Data, certificate: Certificate, _self: Transaction) {
-    when certificate is {
-      RegisterCredential { .. } | UnregisterCredential { .. } -> True
-      _ -> False
-    }
+    common.handle_publish(certificate)
   }
 
   else(_) {
