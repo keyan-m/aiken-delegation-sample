@@ -6,9 +6,7 @@ use aiken/crypto.{VerificationKeyHash, blake2b_256}
 use cardano/address.{Address, Credential, Script}
 use cardano/assets.{PolicyId}
 use cardano/certificate.{Certificate, RegisterCredential, UnregisterCredential}
-use cardano/transaction.{
-  InlineDatum, Input, Output, Transaction,
-}
+use cardano/transaction.{InlineDatum, Input, Output, Transaction}
 
 pub type MintRedeemer {
   target_policy_id: PolicyId,
@@ -18,8 +16,7 @@ pub type MintRedeemer {
 
 pub type BurnRedeemer {
   target_policy_id: PolicyId,
-  spent_utxo_input_index: Int,
-  output_index: Int,
+  input_index: Int,
 }
 
 validator mint_logic {
@@ -58,9 +55,9 @@ validator mint_logic {
     // Now that we have the name of this new NFT, we can validate that the
     // produced output contains it.
     expect and {
-      output_nft_symbol == target_policy_id,
-      output_nft_name == asset_name,
-    }
+        output_nft_symbol == target_policy_id,
+        output_nft_name == asset_name,
+      }
 
     // There has to be a mint of this NFT with a quantity of 1. Note that with
     // this check, we won't need to check the quantity of the NFT in the output,
@@ -94,7 +91,43 @@ validator mint_logic {
 
 validator burn_logic {
   withdraw(redeemer: BurnRedeemer, _account: Credential, tx: Transaction) {
-    todo
+    let Transaction { inputs, mint, extra_signatories, .. } = tx
+
+    let BurnRedeemer { target_policy_id, input_index } = redeemer
+
+    // Find the input UTxO specified via the redeemer.
+    expect Some(Input {
+      output: Output {
+        address: Address { payment_credential: Script(input_script_hash), .. },
+        value: input_value,
+        datum: InlineDatum(input_datum_data),
+        ..
+      },
+      ..
+    }) = inputs |> list.at(input_index)
+
+    // This input must be coming from the `target_policy_id` script address.
+    expect input_script_hash == target_policy_id
+
+    // Apart from ADA, it is expected the UTxO contains only the NFT being
+    // burnt.
+    expect [Pair(input_nft_symbol, input_nft_tn_qty_pair)] =
+      input_value |> assets.without_lovelace |> assets.to_dict |> dict.to_pairs
+    expect [Pair(input_nft_name, _input_nft_quantity)] =
+      input_nft_tn_qty_pair |> dict.to_pairs
+
+    // Again, no need to validate the quantity of the NFT in input UTxO, as any
+    // value other than 1 is not possible.
+    expect and {
+        input_nft_symbol == target_policy_id,
+        -1 == ( mint |> assets.quantity_of(target_policy_id, input_nft_name) ),
+      }
+
+    // Extract the owner public key hash from the input datum.
+    let owner: VerificationKeyHash = builtin.un_b_data(input_datum_data)
+
+    // This `owner` must have signed the transaction.
+    extra_signatories |> list.any(fn(vkey) -> Bool { owner == vkey })
   }
 
   publish(_redeemer: Data, certificate: Certificate, _self: Transaction) {
